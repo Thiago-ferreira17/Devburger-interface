@@ -3,6 +3,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { api } from "../../services/api";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 import {
 	Container,
@@ -11,11 +12,15 @@ import {
 	LeftContainer,
 	RightContainer,
 	Title,
+	Link,
 } from "./styles";
 import Logo from "../../assets/logo.svg";
 import { Button } from "../../Components/Button";
 
+
 export function Register() {
+	const navigate = useNavigate();
+
 	const schema = yup
 		.object({
 			name: yup.string().required("O nome é obrigatório"),
@@ -42,20 +47,34 @@ export function Register() {
 		resolver: yupResolver(schema),
 	});
 	const onSubmit = async (data) => {
-		const response = await toast.promise(
-			api.post("/users", {
-				name: data.name,
-				email: data.email,
-				password: data.password,
-			}),
-			{
-				pending: "Verificando seus dados",
-				success: "Cadastro efetuado com sucesso !!",
-				error: "Ops, algo deu errado! Tente novamente. 🤯",
-			},
-		);
+		try {
+			const { status } = await api.post(
+				"/users",
+				{
+					name: data.name,
+					email: data.email,
+					password: data.password,
+				},
+				{
+					validateStatus: () => true,
+				},
+			);
 
-		console.log(response);
+			if (status === 200 || status === 201) {
+				setTimeout(() => {
+					navigate('/login')
+				},2000);
+
+				toast.success("Conta criada com sucesso!!! 👍");
+			} else if (status === 409) {
+				toast.error("Email já cadastrado, faça o login para continuar");
+			} else {
+				throw new Error();
+			}
+		// eslint-disable-next-line no-unused-vars
+		} catch (error) {
+			toast.error("😭 Falha no Sistema, tente novamente !");
+		}
 	};
 
 	return (
@@ -94,7 +113,7 @@ export function Register() {
 				<p>
 					Já possui conta?{" "}
 					{/* biome-ignore lint/a11y/useValidAnchor: <explanation> */}
-					<a>Clique aqui</a>
+					<Link to = "/login">Clique aqui</Link>
 				</p>
 			</RightContainer>
 		</Container>
